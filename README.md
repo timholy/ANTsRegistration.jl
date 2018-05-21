@@ -35,9 +35,39 @@ a time axis. See
 
 If you are passing the data via filenames, ensure that you have stored your images in an ITK-readable format. [NRRD](https://github.com/JuliaIO/NRRD.jl) is recommended. For those performing acquisition with Imagine, you can write out an [NRRD header](https://github.com/timholy/ImagineFormat.jl#converting-to-nrrd).
 
+If you are registering an image sequence stored in NRRD format, and you see an error like
+
+```sh
+Description: itk::ERROR: NrrdImageIO(0x2b62880): ReadImageInformation: nrrd's #independent axes (3) doesn't match dimension of space in which orientation is defined (2); not currently handled
+```
+
+the remedy appears to be to delete the `space dimension` and `space origin` fields.
+
 ### Performing registration
 
-There are two phases: writing out a deformation file and applying the deformation file (`warp`). You can combine the two with `register` by supplying an .
+The process of registering images can be broken down into stages, and multiple stages can be cascaded together. A stage is specified as follows:
 
+```julia
+stage = Stage(fixedimg, transform, metric=MI(), shrink=(8,4,2,1), smooth=(3,2,1,0), iterations=(1000,500,250,0))
+```
 
-The process of registering images can be broken down into stages, and multiple stages can be cascaed
+The transform might be one of the following:
+```julia
+transform = Global("Rigid")
+transform = Global("Affine")
+transform = Syn()
+```
+The last one is for a diffeomorphism (warping) registration.
+
+To register the single image `moving` to the single image `fixed`, use
+```julia
+imgw = register(fixed, moving, pipeline; kwargs...)
+```
+where `pipeline` is a single `Stage` or a vector of stages.
+
+To register an image series in the file `movingfilename` to a single image `fixed`, use
+```julia
+motioncorr((infofilename, warpedfilename), fixed, movingfilename, pipeline)
+```
+
+See the help for more detail.
