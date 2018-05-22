@@ -74,14 +74,16 @@ you can use `MeanSquares` (where the images are compared based on
 their mean-squared-difference) or `CC` (which stands for neighborhood
 cross correlation).
 
-Finally, the final arguments in the example above signal that we want
+Finally, the last arguments in the example above signal that we want
 to use a 4-level registration. For the first (coarsest) level, the
 image will be shrunk by a factor of 8, smoothed over a 3-pixel radius,
-and up to 1000 iterations will be used in trying to minimize the
-metric. The main advantage of shrinking is performance, as small image
-pairs require fewer pixelwise comparisons than large images.  The
-advantage of smoothing is that you may increase the size of the
-"attraction basin," making it easier to fall into a good minimum.
+and the parameters will be tweaked up to 1000 times when trying to
+minimize the metric. Choosing to shrink can improve performance, as
+small image pairs require fewer pixelwise comparisons than large
+images.  The potential advantage of smoothing is that you may increase
+the size of the "attraction basin," making it easier to fall into a
+good minimum, although it has the potential downside of smoothing over
+sharp features that actually aid alignment.
 
 Once the rigid transformation has been found for this coarsest level,
 it will be used to initialize the transformation for the next
