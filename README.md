@@ -62,11 +62,17 @@ transform = Syn()
 ```
 The last one is for a diffeomorphism (warping) registration.
 
-`stage` specifies that the metric (the way in which the two images are
-compared) is `MI`, which stands for [mutual information](). (You can
-specify various options such as the number of bins.) Alternatively you
-can use `MeanSquares` or `CC`, which stands for neighborhood cross
-correlation.
+This particular `stage` specifies that the metric (the way in which
+the two images are compared) is `MI`, which stands for
+[mutual information](https://en.wikipedia.org/wiki/Mutual_information).
+This can be a good choice particularly when the images differ in ways
+other than just a spatial transformation, for example when they may be
+collected by different imaging modalities or exhibit intensity
+differences due to calcium transients. (With `MI` you can optionally
+specify various parameters such as the number of bins.) Alternatively
+you can use `MeanSquares` (where the images are compared based on
+their mean-squared-difference) or `CC` (which stands for neighborhood
+cross correlation).
 
 Finally, the final arguments in the example above signal that we want
 to use a 4-level registration. For the first (coarsest) level, the
