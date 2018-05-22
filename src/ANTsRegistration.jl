@@ -1,6 +1,6 @@
-module ANTSRegistration
+module ANTsRegistration
 
-using Images
+using Images, Glob
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
 
@@ -134,7 +134,7 @@ is one of [`MI`](@ref), [`MeanSquares`](@ref), or [`CC`](@ref). The
 remaining arguments are tuple arguments for multilevel optimization;
 each corresponding entry indicates the shrinking factor (8 means 8×
 reduced in size), smoothing size (in voxels), and number of iterations
-allows in the optimization algorithm for a given level.
+allowed when optimizing.
 """
 Stage(img::AbstractArray, transform::AbstractTransformation) =
     Stage(img, transform, MI())
@@ -188,10 +188,16 @@ function default_convergence(sz::Dims, transform::SyN)
 end
 
 
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; verbose::Bool=false)
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false)
     cmd = `$(ENV["ANTSPATH"])/antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v`
+    end
+    if histmatch
+        cmd = `$cmd --use-histogram-matching`
+    end
+    if isa(winsorize, Tuple{Real,Real})
+        cmd = `$cmd --winsorize-image-intensities \[$(winsorize[1]),$(winsorize[2])\]`
     end
     for pipe in pipeline
         cmd = shcmd(cmd, pipe, fixedname, movingname)
@@ -212,16 +218,27 @@ function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline:
     end
     fixedname = write_nrrd(fixed)
     movingname = write_nrrd(moving)
-    register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...)
+    imgw = register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...)
+    rm(movingname)
+    rm(fixedname)
 end
 
 function register(fixed::AbstractArray, moving, pipeline::AbstractVector{<:Stage}; kwargs...)
     up = userpath()
     outname = randstring(10)
+    tfmname = joinpath(up, outname*"_warp")
     warpedname = joinpath(up, outname*".nrrd")
-    output = (joinpath(up, outname*"_warp"), warpedname)
+    output = (tfmname, warpedname)
     register(output, fixed, moving, pipeline; kwargs...)
-    return load(warpedname)
+    imgw = load(warpedname)
+    rm(warpedname)
+    for tfmfile in glob(outname*"_warp"*"*.mat", up)
+        rm(tfmfile)
+    end
+    for tfmfile in glob(outname*"_warp"*"*.nii.gz", up)
+        rm(tfmfile)
+    end
+    return imgw
 end
 
 register(output, fixed::AbstractArray, moving, pipeline::Stage; kwargs...) =
@@ -279,6 +296,7 @@ function motioncorr(output, fixed::AbstractArray, movingname::AbstractString, pi
     end
     fixedname = write_nrrd(fixed)
     motioncorr(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...)
+    rm(fixedname)
 end
 motioncorr(output, fixed::AbstractArray, movingname::AbstractString, stage::Stage; kwargs...) =
     motioncorr(output, fixed, movingname, [stage]; kwargs...)
