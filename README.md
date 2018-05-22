@@ -40,8 +40,8 @@ If you are registering an image sequence stored in NRRD format, and you see an e
 Description: itk::ERROR: NrrdImageIO(0x2b62880): ReadImageInformation: nrrd's #independent axes (3) doesn't match dimension of space in which orientation is defined (2); not currently handled
 ```
 
-the remedy appears to be to delete the `space dimension` and `space
-origin` fields from the header file. This is easier if you are using a
+the remedy appears to be to delete the `space dimension` and `space origin`
+fields from the header file. This is easier if you are using a
 detached header file (`.nhdr`).
 
 ### Performing registration
@@ -62,28 +62,30 @@ transform = Syn()
 ```
 The last one is for a diffeomorphism (warping) registration.
 
-This particular `stage` specifies that the metric (the way in which
-the two images are compared) is `MI`, which stands for
-[mutual information](https://en.wikipedia.org/wiki/Mutual_information).
-This can be a good choice particularly when the images differ in ways
-other than just a spatial transformation, for example when they may be
-collected by different imaging modalities or exhibit intensity
-differences due to calcium transients. (With `MI` you can optionally
-specify various parameters such as the number of bins.) Alternatively
-you can use `MeanSquares` (where the images are compared based on
-their mean-squared-difference) or `CC` (which stands for neighborhood
-cross correlation).
+This particular `stage` uses the `MI` metric for comparing the two
+images.  `MI` is short for
+[mutual information](https://en.wikipedia.org/wiki/Mutual_information),
+a generalization of the notion of cross-correlation.  This can be a
+good choice particularly when the images differ in ways other than
+just a spatial transformation, for example when they may be collected
+by different imaging modalities or exhibit intensity differences due
+to calcium transients. (With `MI` you can optionally specify various
+parameters such as the number of histogram bins.) Alternatively you
+can use `MeanSquares` (where the images are compared based on their
+mean-squared-difference) or `CC` (which stands for neighborhood cross
+correlation).
 
-Finally, the last arguments in the example above signal that we want
+Finally, the last arguments in the example above indicate that we want
 to use a 4-level registration. For the first (coarsest) level, the
 image will be shrunk by a factor of 8, smoothed over a 3-pixel radius,
-and the parameters will be tweaked up to 1000 times when trying to
-minimize the metric. Choosing to shrink can improve performance, as
-small image pairs require fewer pixelwise comparisons than large
-images.  The potential advantage of smoothing is that you may increase
-the size of the "attraction basin," making it easier to fall into a
-good minimum, although it has the potential downside of smoothing over
-sharp features that actually aid alignment.
+and then aligned, allowing the parameters to be tweaked up to 1000
+times when trying to minimize the metric. Choosing to shrink can
+improve performance, because small image pairs require fewer pixelwise
+comparisons than large images, as long as you don't shrink so much
+that features useful for alignment are eliminated.  Likewise,
+smoothing can help find a good minimum by increasing the size of the
+"attraction basin," as long as you don't blur out sharp features that
+actually aid alignment.
 
 Once the rigid transformation has been found for this coarsest level,
 it will be used to initialize the transformation for the next
@@ -92,6 +94,8 @@ at their provided size), a `smooth` of 0 (meaning no smoothing), and 5
 iterations. This will ensure that the transformation doesn't miss
 opportunities for sub-pixel alignment at the finest scale.
 
+All parameters after `transform` have default values, so you only need
+to assign them if you need to control them more precisely.
 
 #### Top-level API
 
@@ -110,14 +114,18 @@ stagesyn = Stage(fixed, Syn())
 imgw = register(fixed, moving, [stageaff,stagesyn]; kwargs...)
 ```
 
-This will increase the odds that much of the registration will be an
-affine alignment, and use warping only when necessary for higher
-fidelity.
+This choice will align the images as well as possible (given the
+default parameters) using a pure-affine transformation, and then
+introduce warping where needed to improve the alignment.
 
-
-To register an image series in the file `movingfilename` to a single image `fixed`, use
+If instead you'd like to correct for motion in an image sequence, consider
 ```julia
 motioncorr((infofilename, warpedfilename), fixed, movingfilename, pipeline)
 ```
+Here you represent the moving image sequence via its filename. The
+first argument stores the names of the files to which the data should
+be written. Of course, you can alternatively call `register` iteratively
+for each image in the series.
 
-See the help for more detail.
+For more detailed information, see the help on individual types and
+functions.
