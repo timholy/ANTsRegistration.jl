@@ -35,6 +35,7 @@ end
 end
 
 @testset "Options" begin
+    # Histogram matching
     fixed = [0 0 0 0 0 0 0;
              0 0 0 0 0 0 0;
              0 0 10 0 0 0 0;
@@ -45,13 +46,15 @@ end
               0 0 0 0 0 0 0;
               0 0 8 8 0 0 0;
               zeros(3, 7)]
-    stage = Stage(fixed, Global("Translation"), MeanSquares(), (1,1), (2,0), (1000,1000))
-    imgw = register(fixed, moving, stage)
-    @test_broken sum(imgw) > 0
-    @test_broken sum(mappedarray(diff2_0, fixed, histmatch(imgw, fixed, 12))) > 1e-3*sum(abs2f, fixed)
-    imgw = register(fixed, moving, stage; histmatch=true)
-    @test_broken sum(imgw) > 0
-    @test sum(mappedarray(diff2_0, fixed, histmatch(imgw, fixed, 12))) < 1e-3*sum(abs2f, fixed)
+    pfixed  = padarray(fixed, Fill(0, (3,3))).parent
+    pmoving = padarray(moving, Fill(0, (3,3))).parent
+    stage = Stage(pfixed, Global("Translation"), MeanSquares(), (1,1), (3,0), (1000,1000))
+    imgw = register(pfixed, pmoving, stage)
+    @test sum(mappedarray(diff2_0, pfixed, histmatch(imgw, pfixed))) > 1e-3*sum(abs2f, fixed)
+    imgw = register(pfixed, pmoving, stage; histmatch=true)
+    @test sum(mappedarray(diff2_0, pfixed, histmatch(imgw, pfixed))) < 1e-3*sum(abs2f, fixed)
+
+    # Winsorizing
     fixed = rand(100,100)
     moving = copy(fixed)
     fixed[50,50] = 1000
