@@ -1,6 +1,6 @@
 module ANTsRegistration
 
-using Images, Glob
+using Images, Glob, Random
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
 
@@ -56,7 +56,7 @@ Sets the mode to diffeomorphic (warping) registration.
 SyN() = SyN(0.1)
 SyN(gradientstep) = SyN(gradientstep, 3, 0)
 
-Base.show(io::IO, syn::SyN) = print(io, "SyN\[", syn.gradientstep, ',', syn.updateFV, ',', syn.totalFV, '\]')
+Base.show(io::IO, syn::SyN) = print(io, "SyN[", syn.gradientstep, ',', syn.updateFV, ',', syn.totalFV, ']')
 
 
 abstract type AbstractMetric end
