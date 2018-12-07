@@ -94,6 +94,17 @@ opportunities for sub-pixel alignment at the finest scale.
 All parameters after `transform` have default values, so you only need
 to assign them if you need to control them more precisely.
 
+**Note on physical units**: if your images have anisotropic resolution,
+you should strongly consider using physical units for your smoothing.
+For example,
+
+```julia
+using Unitful: μm
+smooth=(50μm,5μm)
+```
+
+would be appropriate for a two-iteration stage.
+
 #### Top-level API
 
 To register the single image `moving` to the single image `fixed`, use

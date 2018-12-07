@@ -1,6 +1,6 @@
 module ANTsRegistration
 
-using Images, Glob, Random
+using Images, Glob, Random, Unitful
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
 
@@ -103,21 +103,21 @@ metric(cmd::Cmd, fixedname, movingname, m::CC) =
     `$cmd --metric CC\[$fixedname,$movingname,$(m.metricweight),$(m.radius)\]`
 
 
-struct Stage{N}
+struct Stage{N,T}
     transform::AbstractTransformation
     metric::AbstractMetric
     shrink::NTuple{N,Int}
-    smoothing::NTuple{N,Int}
+    smoothing::NTuple{N,T}
     iterations::NTuple{N,Int}
     convergencethresh::Float64
     convergencewindow::Int
 end
 
 Stage(img::AbstractArray, transform::AbstractTransformation, metric::AbstractMetric,
-      shrink::NTuple{N,Int}, smooth::NTuple{N,Int}, iterations::NTuple{N,Int}) where N =
+      shrink::NTuple{N,Int}, smooth::NTuple{N,Any}, iterations::NTuple{N,Int}) where N =
           Stage(transform, metric, shrink, smooth, iterations, default_convergence(img, transform)[2:3]...)
 Stage(img::AbstractArray, transform::AbstractTransformation, metric::AbstractMetric,
-      shrink::NTuple{N,Int}, smooth::NTuple{N,Int}) where N =
+      shrink::NTuple{N,Int}, smooth::NTuple{N,Any}) where N =
           Stage(transform, metric, shrink, smooth, default_convergence(img, transform)...)
 Stage(img::AbstractArray, transform::AbstractTransformation, metric::AbstractMetric,
       shrink::NTuple{N,Int}) where N =
@@ -147,7 +147,7 @@ function shcmd(cmd::Cmd, stage::Stage, fixedname, movingname; ismc::Bool=false)
         cmd = `$cmd --shrinkFactors $(xstring(stage.shrink)) --smoothingSigmas $(xstring(stage.smoothing))`
     else
         cmd = `$cmd --convergence \[$(xstring(stage.iterations)),$(stage.convergencethresh),$(stage.convergencewindow)\]`
-        cmd = `$cmd --shrink-factors $(xstring(stage.shrink)) --smoothing-sigmas $(xstring(stage.smoothing))vox`
+        cmd = `$cmd --shrink-factors $(xstring(stage.shrink)) --smoothing-sigmas $(xqstring(stage.smoothing))$(ustring(stage.smoothing))`
     end
     return cmd
 end
@@ -347,5 +347,15 @@ function xstring(t::Tuple)
     xstring(io, t)
     return String(take!(io))
 end
+
+xqstring(t) = xstring(to_mm_or_vox.(t))
+
+to_mm_or_vox(x::Number) = x
+# to_mm_or_vox(x::Quantity) = float(ustrip(uconvert(u"mm", x)))
+to_mm_or_vox(x::Quantity) = float(ustrip(x))  # it seems that ITK treats any physical units as "mm"
+
+ustring(t) = ustring(t[1])
+ustring(x::Number) = "vox"
+ustring(x::Quantity) = "mm"   # seems to require mm
 
 end # module

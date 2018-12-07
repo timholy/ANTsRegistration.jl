@@ -140,7 +140,7 @@ end
     ps = (1u"μm", 2u"μm")
     fixed = AxisArray(restrict(fixed0, 2), (:y, :x), ps)
     moving = AxisArray(restrict(moving0, 2), (:y, :x), ps)
-    stage = Stage(fixed, Global("Rigid"), MeanSquares(), (1,), (25,), (1000,))
+    stage = Stage(fixed, Global("Rigid"), MeanSquares(), (1,), (25u"μm",), (1000,))
     imgw0 = register(fixed0, moving0, stage)/255
     imgw = AxisArray(register(fixed, moving, stage), (:y, :x), ps)
     # Currently broken, see https://github.com/ANTsX/ANTs/issues/675
