@@ -1,5 +1,5 @@
 using ANTsRegistration, Images, TestImages, Rotations, CoordinateTransformations, MappedArrays, FileIO, NRRD, Glob
-using Base.Test
+using Test, Statistics
 
 diff2_0(f, m) = m == 0 ? 0.0 : (Float64(f) - Float64(m))^2
 abs2f(x) = abs2(Float64(x))
@@ -50,9 +50,9 @@ end
     pmoving = padarray(moving, Fill(0, (3,3))).parent
     stage = Stage(pfixed, Global("Translation"), MeanSquares(), (1,1), (3,0), (1000,1000))
     imgw = register(pfixed, pmoving, stage)
-    @test sum(mappedarray(diff2_0, pfixed, histmatch(imgw, pfixed))) > 1e-3*sum(abs2f, fixed)
+    @test sum(mappedarray(diff2_0, pfixed, adjust_histogram(Matching(), imgw, pfixed, 256))) > 1e-3*sum(abs2f, fixed)
     imgw = register(pfixed, pmoving, stage; histmatch=true)
-    @test sum(mappedarray(diff2_0, pfixed, histmatch(imgw, pfixed))) < 1e-3*sum(abs2f, fixed)
+    @test sum(mappedarray(diff2_0, pfixed, adjust_histogram(Matching(), imgw, pfixed, 0:12))) < 1e-3*sum(abs2f, fixed)
 
     # Winsorizing
     fixed = rand(100,100)
@@ -81,7 +81,7 @@ end
         end
     end
     hdrfile = joinpath(testdir, "series.nhdr")
-    header = NRRD.headerinfo(N0f8, (Axis{:y}(indices(fixed, 1)), Axis{:x}(indices(fixed, 2)), Axis{:time}(indices(θs, 1))))
+    header = NRRD.headerinfo(N0f8, (Axis{:y}(axes(fixed, 1)), Axis{:x}(axes(fixed, 2)), Axis{:time}(axes(θs, 1))))
     header["datafile"] = rawfile
     # Hack to overcome ITK's limitations in reading NRRD files
     delete!(header, "space dimension")
