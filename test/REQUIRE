@@ -1,7 +1,9 @@
 Images
+ImageMagick
 TestImages
 Rotations
 CoordinateTransformations
 MappedArrays
 FileIO
 NRRD
+Unitful

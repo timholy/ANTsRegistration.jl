@@ -1,4 +1,4 @@
-# ANTSRegistration
+# ANTsRegistration
 
 [![Build Status](https://travis-ci.org/timholy/ANTSRegistration.jl.svg?branch=master)](https://travis-ci.org/timholy/ANTSRegistration.jl)
 
@@ -34,15 +34,12 @@ format. [NRRD](https://github.com/JuliaIO/NRRD.jl) is recommended. For
 those performing acquisition with Imagine, you can write out an
 [NRRD header](https://github.com/timholy/ImagineFormat.jl#converting-to-nrrd).
 
-If you are registering an image sequence stored in NRRD format, and you see an error like
-
-```sh
-Description: itk::ERROR: NrrdImageIO(0x2b62880): ReadImageInformation: nrrd's #independent axes (3) doesn't match dimension of space in which orientation is defined (2); not currently handled
-```
-
-the remedy appears to be to delete the `space dimension` and `space origin`
-fields from the header file. This is easier if you are using a
-detached header file (`.nhdr`).
+Unfortunately, [the NRRD format](http://teem.sourceforge.net/nrrd/format.html)
+lacks a file-validator, and a few aspects of the standard description seem
+to leave room for interpretation. If you encounter bugs, it is possible that
+Julia and ITK differ with respect to the implementation of the NRRD header.
+Try copying the command and running it the shell prompt, then report the error
+[here](https://github.com/JuliaIO/NRRD.jl/issues/new).
 
 ### Performing registration
 
@@ -96,6 +93,17 @@ opportunities for sub-pixel alignment at the finest scale.
 
 All parameters after `transform` have default values, so you only need
 to assign them if you need to control them more precisely.
+
+**Note on physical units**: if your images have anisotropic resolution,
+you should strongly consider using physical units for your smoothing.
+For example,
+
+```julia
+using Unitful: μm
+smooth=(50μm,5μm)
+```
+
+would be appropriate for a two-iteration stage.
 
 #### Top-level API
 

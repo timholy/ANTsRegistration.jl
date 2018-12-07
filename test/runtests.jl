@@ -1,4 +1,5 @@
 using ANTsRegistration, Images, TestImages, Rotations, CoordinateTransformations, MappedArrays, FileIO, NRRD, Glob
+using Unitful
 using Test, Statistics
 
 diff2_0(f, m) = m == 0 ? 0.0 : (Float64(f) - Float64(m))^2
@@ -128,4 +129,21 @@ end
     rm(hdrfile)
     rm(fixedname)
     rm(movingtmp)
+end
+
+@testset "Anisotropic spacing" begin
+    img = testimage("cameraman")
+    fixed0 = img[50:300, 50:300]
+    tfm = Translation(250,250) ∘ LinearMap(RotMatrix(-pi/4)) ∘ Translation(-250,-250)
+    img_rotated = warp(img, tfm)
+    moving0 = img_rotated[75:320, 75:325]
+    ps = (1u"μm", 2u"μm")
+    # If you don't trim the edges, the mixing with zeros "anchors" the image in place.
+    # see resolution of https://github.com/ANTsX/ANTs/issues/675
+    fixed = AxisArray(restrict(fixed0, 2)[:,2:end-1], (:y, :x), ps)
+    moving = AxisArray(restrict(moving0, 2)[:,2:end-1], (:y, :x), ps)
+    stage = Stage(fixed, Global("Rigid"), MeanSquares(), (1,), (25u"μm",), (1000,))
+    imgw0 = register(fixed0, moving0, stage)/255
+    imgw = AxisArray(register(fixed, moving, stage), (:y, :x), ps)
+    @test 1.01*mean(mappedarray(diff2_0, fixed0, imgw0)) >= mean(mappedarray(diff2_0, fixed, imgw))
 end
