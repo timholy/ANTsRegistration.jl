@@ -138,11 +138,12 @@ end
     img_rotated = warp(img, tfm)
     moving0 = img_rotated[75:320, 75:325]
     ps = (1u"μm", 2u"μm")
-    fixed = AxisArray(restrict(fixed0, 2), (:y, :x), ps)
-    moving = AxisArray(restrict(moving0, 2), (:y, :x), ps)
+    # If you don't trim the edges, the mixing with zeros "anchors" the image in place.
+    # see resolution of https://github.com/ANTsX/ANTs/issues/675
+    fixed = AxisArray(restrict(fixed0, 2)[:,2:end-1], (:y, :x), ps)
+    moving = AxisArray(restrict(moving0, 2)[:,2:end-1], (:y, :x), ps)
     stage = Stage(fixed, Global("Rigid"), MeanSquares(), (1,), (25u"μm",), (1000,))
     imgw0 = register(fixed0, moving0, stage)/255
     imgw = AxisArray(register(fixed, moving, stage), (:y, :x), ps)
-    # Currently broken, see https://github.com/ANTsX/ANTs/issues/675
-    @test_broken mean(mappedarray(diff2_0, fixed0, imgw0)) ≈ mean(mappedarray(diff2_0, fixed, imgw)) rtol=0.01
+    @test 1.01*mean(mappedarray(diff2_0, fixed0, imgw0)) >= mean(mappedarray(diff2_0, fixed, imgw))
 end
