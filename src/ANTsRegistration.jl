@@ -1,6 +1,6 @@
 module ANTsRegistration
 
-using Images, Glob, Random, Unitful
+using Images, Glob, Random, Unitful, Suppressor
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
 
@@ -200,7 +200,7 @@ function default_convergence(sz::Dims, transform::SyN)
 end
 
 
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false)
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false, suppressout::Bool=false)
     cmd = `$antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v`
@@ -219,7 +219,11 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     if verbose
         @show cmd
     end
-    run(cmd)
+    if suppressout
+    @suppress_out run(cmd)
+    else
+        run(cmd)
+    end
 end
 
 function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
