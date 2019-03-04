@@ -4,6 +4,18 @@ using Images, Glob, Random, Unitful
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
 
+# Load in `deps.jl`, complaining if it does not exist
+const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
+if !isfile(depsjl_path)
+    error("ANTsRegistration not installed properly, run `] build ANTsRegistration', restart Julia and try again")
+end
+include(depsjl_path)
+
+# Module initialization function
+function __init__()
+    check_deps()
+end
+
 # Per-user working path
 function userpath()
     td = tempdir()
@@ -189,7 +201,7 @@ end
 
 
 function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false)
-    cmd = `$(ENV["ANTSPATH"])/antsRegistration -d $nd`
+    cmd = `$antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v`
     end
@@ -302,7 +314,7 @@ motioncorr(output, fixed::AbstractArray, movingname::AbstractString, stage::Stag
     motioncorr(output, fixed, movingname, [stage]; kwargs...)
 
 function motioncorr(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; verbose::Bool=false)
-    cmd = `$(ENV["ANTSPATH"])/antsMotionCorr -u 1 -e 1 -d $nd`
+    cmd = `$ants/antsMotionCorr -u 1 -e 1 -d $nd`
     if verbose
         cmd = `$cmd -v`
     end

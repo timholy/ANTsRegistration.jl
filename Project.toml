@@ -1,0 +1,14 @@
+name = "ANTsRegistration"
+uuid = "084f3631-7eb2-446c-b8ed-543d1c4bdaa0"
+authors = ["Tim Holy"]
+version = "0.1.0"
+
+[deps]
+BinaryProvider = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
+Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+NRRD = "9bb6cfbd-7763-5393-b1b5-1c8e09872146"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"

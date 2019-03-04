@@ -8,22 +8,6 @@ This provides a Julia wrapper around the
 [Advanced Normalization Tools](https://stnava.github.io/ANTs/) image
 registration and motion correction suite.
 
-## Installation
-
-To use this package you need to install ANTS manually and define the
-`ANTSPATH` variable. For example, I built
-ANTS
-[from source](https://brianavants.wordpress.com/2012/04/13/updated-ants-compile-instructions-april-12-2012/)
-and then added
-
-```sh
-export ANTSPATH="/home/tim/src/antsbin/bin"
-```
-
-to my `.bashrc` file. If this code throws a `Key Error`, then most
-likely you didn't define this variable or need to execute `source
-~/.bashrc` before launching Julia.
-
 ## Usage
 
 ### Image data and file format
