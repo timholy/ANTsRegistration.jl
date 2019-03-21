@@ -1,8 +1,20 @@
 module ANTsRegistration
 
-using Images, Glob, Random, Unitful
+using Images, Glob, Random, Unitful, Suppressor
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
+
+# Load in `deps.jl`, complaining if it does not exist
+const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
+if !isfile(depsjl_path)
+    error("ANTsRegistration not installed properly, run `] build ANTsRegistration', restart Julia and try again")
+end
+include(depsjl_path)
+
+# Module initialization function
+function __init__()
+    check_deps()
+end
 
 # Per-user working path
 function userpath()
@@ -188,8 +200,8 @@ function default_convergence(sz::Dims, transform::SyN)
 end
 
 
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false)
-    cmd = `$(ENV["ANTSPATH"])/antsRegistration -d $nd`
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false, suppressout::Bool=false)
+    cmd = `$antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v`
     end
@@ -207,7 +219,11 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     if verbose
         @show cmd
     end
-    run(cmd)
+    if suppressout
+    @suppress_out run(cmd)
+    else
+        run(cmd)
+    end
 end
 
 function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
@@ -302,7 +318,7 @@ motioncorr(output, fixed::AbstractArray, movingname::AbstractString, stage::Stag
     motioncorr(output, fixed, movingname, [stage]; kwargs...)
 
 function motioncorr(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; verbose::Bool=false)
-    cmd = `$(ENV["ANTSPATH"])/antsMotionCorr -u 1 -e 1 -d $nd`
+    cmd = `$antsMotionCorr -u 1 -e 1 -d $nd`
     if verbose
         cmd = `$cmd -v`
     end

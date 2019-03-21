@@ -9,20 +9,9 @@ This provides a Julia wrapper around the
 registration and motion correction suite.
 
 ## Installation
-
-To use this package you need to install ANTS manually and define the
-`ANTSPATH` variable. For example, I built
-ANTS
-[from source](https://brianavants.wordpress.com/2012/04/13/updated-ants-compile-instructions-april-12-2012/)
-and then added
-
-```sh
-export ANTSPATH="/home/tim/src/antsbin/bin"
+```julia
+] add https://github.com/timholy/ANTsRegistration.jl
 ```
-
-to my `.bashrc` file. If this code throws a `Key Error`, then most
-likely you didn't define this variable or need to execute `source
-~/.bashrc` before launching Julia.
 
 ## Usage
 
