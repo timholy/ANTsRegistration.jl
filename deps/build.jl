@@ -5,7 +5,8 @@ const verbose = "--verbose" in ARGS
 const prefix = Prefix(get([a for a in ARGS if a != "--verbose"], 1, joinpath(@__DIR__, "usr")))
 products = [
     ExecutableProduct(prefix, "ANTS", :ants),
-    ExecutableProduct(prefix, "antsRegistration", :antsRegistration)
+    ExecutableProduct(prefix, "antsRegistration", :antsRegistration),
+    ExecutableProduct(prefix, "antsMotionCorr", :antsMotionCorr)
 ]
 
 # Download binaries from hosted location

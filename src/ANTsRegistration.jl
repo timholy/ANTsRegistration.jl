@@ -318,7 +318,7 @@ motioncorr(output, fixed::AbstractArray, movingname::AbstractString, stage::Stag
     motioncorr(output, fixed, movingname, [stage]; kwargs...)
 
 function motioncorr(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; verbose::Bool=false)
-    cmd = `$ants/antsMotionCorr -u 1 -e 1 -d $nd`
+    cmd = `$antsMotionCorr -u 1 -e 1 -d $nd`
     if verbose
         cmd = `$cmd -v`
     end
