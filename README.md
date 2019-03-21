@@ -8,6 +8,11 @@ This provides a Julia wrapper around the
 [Advanced Normalization Tools](https://stnava.github.io/ANTs/) image
 registration and motion correction suite.
 
+## Installation
+```julia
+] add https://github.com/timholy/ANTsRegistration.jl
+```
+
 ## Usage
 
 ### Image data and file format
