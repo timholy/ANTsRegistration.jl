@@ -124,6 +124,7 @@ end
     for tfmfile in glob("info*.mat", testdir)
         rm(tfmfile)
     end
+    imgw = moving = nothing; GC.gc(); # Unlink variables from temp files. added to prevent IOerror when run on Windows. 
     rm(output[2])
     rm(rawfile)
     rm(hdrfile)
