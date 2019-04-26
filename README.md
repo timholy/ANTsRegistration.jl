@@ -144,3 +144,5 @@ const antsRegistration = joinpath(ants_bin_dir, "antsRegistration.exe") # joinpa
 const antsMotionCorr = joinpath(ants_bin_dir, "antsMotionCorr.exe")
 ```
 Then, hopefully, the package can pass all of the tests!
+
+Note that if you rebuild the package (`Pkg.build("ANTsRegistration")`) it is likely that these customizations will be overwritten. You are advised to save a copy of the modified `deps.jl` file and/or change the permissions to prevent it from being overwritten.
