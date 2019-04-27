@@ -126,3 +126,23 @@ for each image in the series.
 
 For more detailed information, see the help on individual types and
 functions.
+
+### Some notes for working on Windows
+Currently, ANTs does not actively support Windows system, officially, they suggest using Linux subsystem instead.
+
+And [the latest binaries they built and released](https://github.com/ANTsX/ANTs/releases/tag/v2.1.0) is 4 years old, and it may not work on every machine. Because of this, if you just install this package on Windows system and use the default Binary files downloaded by `BinaryProvider` in `deps.jl`, [it's highly possible it will not work](https://github.com/ANTsX/ANTs/issues/339).
+
+However, it's tested ANTs can be built from source in Windows system. (Windows 10, VS 2017) (Although officially they suggest [compiling under Linux subsystem](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Windows-10) ). Conceptually it's the same as compiling under MacOS / Linux. It majorly involves using `Cmake` to determine the specificities of your machine / system and automatically generate the configuration file. And then using the compilers of Windows system (e.g. Visual Studio) to build the binary files from source.
+
+After building from source (usually takes hours), you get your path containing the binary files (supposing it's `D:\ANTs_2.1.0_Windows_new_build\bin\Release`). Then, we have to inform `ANTsRegistration.jl` package of the correct location of the binary files. Currently, we have to do it by manually changing `deps.jl` file generated when building this julia package.
+
+For example, change the relevent lines in `deps.jl` to be
+```julia
+const ants_bin_dir = raw"D:\ANTs_2.1.0_Windows_new_build\bin\Release\\" # use this variable for outside ANTs binary
+const ants = joinpath(ants_bin_dir, "ANTS.exe") #joinpath(dirname(@__FILE__), "usr\\bin\\ANTS.exe")
+const antsRegistration = joinpath(ants_bin_dir, "antsRegistration.exe") # joinpath(dirname(@__FILE__), "usr\\bin\\antsRegistration.exe")
+const antsMotionCorr = joinpath(ants_bin_dir, "antsMotionCorr.exe")
+```
+Then, hopefully, the package can pass all of the tests!
+
+Note that if you rebuild the package (`Pkg.build("ANTsRegistration")`) it is likely that these customizations will be overwritten. You are advised to save a copy of the modified `deps.jl` file and/or change the permissions to prevent it from being overwritten.
