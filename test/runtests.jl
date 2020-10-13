@@ -51,9 +51,11 @@ end
     pmoving = padarray(moving, Fill(0, (3,3))).parent
     stage = Stage(pfixed, Global("Translation"), MeanSquares(), (1,1), (3,0), (1000,1000))
     imgw = register(pfixed, pmoving, stage)
-    @test sum(mappedarray(diff2_0, pfixed, adjust_histogram(Matching(), imgw, pfixed, 256))) > 1e-3*sum(abs2f, fixed)
+    img_adj = adjust_histogram(imgw, Matching(targetimg = pfixed, nbins = 256))
+    @test sum(mappedarray(diff2_0, pfixed, img_adj)) > 1e-3*sum(abs2f, fixed)
     imgw = register(pfixed, pmoving, stage; histmatch=true)
-    @test sum(mappedarray(diff2_0, pfixed, adjust_histogram(Matching(), imgw, pfixed, 0:12))) < 1e-3*sum(abs2f, fixed)
+    img_adj = adjust_histogram(imgw, Matching(targetimg = pfixed, edges = 0:12))
+    @test sum(mappedarray(diff2_0, pfixed, img_adj)) < 1e-3*sum(abs2f, fixed)
 
     # Winsorizing
     fixed = rand(100,100)
