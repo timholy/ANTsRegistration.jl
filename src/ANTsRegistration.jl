@@ -200,7 +200,7 @@ function default_convergence(sz::Dims, transform::SyN)
 end
 
 
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false, suppressout::Bool=false)
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false, suppressout::Bool=true)
     cmd = `$antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v`
