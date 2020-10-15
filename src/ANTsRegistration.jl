@@ -248,14 +248,20 @@ function register(fixed::AbstractArray, moving, pipeline::AbstractVector{<:Stage
     register(output, fixed, moving, pipeline; kwargs...)
     imgw = load(warpedname)
     rm(warpedname)
-    tforms = []
+    tforms = Vector{Float64}[]
     for tfmfile in glob(outname*"_warp"*"*.mat", up)
         tmpfile = joinpath(mktempdir(), "ans.txt")
         run(`$ConvertTransformFile $(sdims(fixed)) $tfmfile $tmpfile`)
-        t = open(tmpfile) do io
-            readlines(io)
+        tfm = open(tmpfile) do io
+            while !eof(io)
+                l = readline(io)
+                if startswith(l, "Parameters:")
+                    return parse.(Float64, split(split(l, "Parameters: ")[2], " "))
+                end
+            end
         end
-        push!(tforms,t)
+
+        push!(tforms,tfm)
         rm(tfmfile)
         rm(tmpfile)
     end
