@@ -251,7 +251,7 @@ function register(fixed::AbstractArray, moving, pipeline::AbstractVector{<:Stage
     tforms = []
     for tfmfile in glob(outname*"_warp"*"*.mat", up)
         tmpfile = joinpath(mktempdir(), "ans.txt")
-        run(`$ConvertTransformFile 2 $tfmfile $tmpfile`)
+        run(`$ConvertTransformFile $(sdims(fixed)) $tfmfile $tmpfile`)
         t = open(tmpfile) do io
             readlines(io)
         end
