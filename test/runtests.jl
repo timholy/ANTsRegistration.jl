@@ -11,16 +11,16 @@ abs2f(x) = abs2(Float64(x))
     img_rotated = warp(img, tfm)
     fixed = img[50:300, 50:300]
     moving = img_rotated[50:300, 50:300]
-    mreg, tfm_out = register(fixed, moving, Stage(fixed, Global("Rigid")))/255
-    @test sum(mappedarray(diff2_0, fixed, mreg)) < 1e-3*sum(abs2f, fixed)
+    mreg, tfm_out = register(fixed, moving, Stage(fixed, Global("Rigid")))
+    @test sum(mappedarray(diff2_0, fixed, mreg/255)) < 1e-3*sum(abs2f, fixed)
 
     # For a bigger rotation we need to customize
     tfm = Translation(125,250) ∘ LinearMap(RotMatrix(pi/12)) ∘ Translation(-125,-250)
     img_rotated = warp(img, tfm)
     fixed = img[50:300, 50:300]
     moving = img_rotated[50:300, 50:300]
-    mreg, tfm_out = register(fixed, moving, Stage(fixed, Global("Rigid"), MeanSquares(), (8,4,2,1), (10,7,3,0)))/255
-    @test sum(mappedarray(diff2_0, fixed, mreg)) < 1e-3*sum(abs2f, fixed)
+    mreg, tfm_out = register(fixed, moving, Stage(fixed, Global("Rigid"), MeanSquares(), (8,4,2,1), (10,7,3,0)))
+    @test sum(mappedarray(diff2_0, fixed, mreg/255)) < 1e-3*sum(abs2f, fixed)
 end
 
 @testset "Multistage" begin
@@ -31,8 +31,8 @@ end
     moving = img_rotated[50:300, 50:300]
     rigid = Stage(fixed, Global("Rigid"))
     syn = Stage(fixed, SyN())
-    mreg, tfm_out = register(fixed, moving, [rigid,syn])/255
-    @test sum(mappedarray(diff2_0, fixed, mreg)) < 1e-3*sum(abs2f, fixed)
+    mreg, tfm_out = register(fixed, moving, [rigid,syn])
+    @test sum(mappedarray(diff2_0, fixed, mreg/255)) < 1e-3*sum(abs2f, fixed)
 end
 
 @testset "Options" begin
@@ -149,10 +149,10 @@ end
     # Both of the following should register well: fixed0 and moving0 are isotropic, so
     # the rotation is a rotation; fixed and moving encode their pixel spacing, so even
     # though "squashed" horizontally they also differ by a rotation (once the pixel spacing is accounted for)
-    imgw0, tfm_out = register(fixed0, moving0, stage)/255
+    imgw0, tfm_out = register(fixed0, moving0, stage)
     imgw2, tfm_out = register(fixed, moving, stage)
     imgw = AxisArray(imgw2, (:y, :x), ps)
-    @test 2*mean(mappedarray(diff2_0, fixed0, imgw0)) >= mean(mappedarray(diff2_0, fixed, imgw))
+    @test 2*mean(mappedarray(diff2_0, fixed0, imgw0/255)) >= mean(mappedarray(diff2_0, fixed, imgw))
     # In contrast, if we take away the pixel spacing info, we should not register well
     imgws, tfm_out = register(fixed.data, moving.data, stage)
     @test mean(mappedarray(diff2_0, fixed.data, imgws)) > 3*mean(mappedarray(diff2_0, fixed, imgw))
