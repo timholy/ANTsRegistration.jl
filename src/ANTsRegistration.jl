@@ -234,7 +234,7 @@ function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline:
     end
     fixedname = write_nrrd(fixed)
     movingname = write_nrrd(moving)
-    imgw = register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...)
+    register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...)
     rm(movingname)
     rm(fixedname)
 end
@@ -248,13 +248,21 @@ function register(fixed::AbstractArray, moving, pipeline::AbstractVector{<:Stage
     register(output, fixed, moving, pipeline; kwargs...)
     imgw = load(warpedname)
     rm(warpedname)
+    tforms = []
     for tfmfile in glob(outname*"_warp"*"*.mat", up)
+        tmpfile = joinpath(mktempdir(), "ans.txt")
+        run(`$ConvertTransformFile 2 $tfmfile $tmpfile`)
+        t = open(tmpfile) do io
+            readlines(io)
+        end
+        push!(tforms,t)
         rm(tfmfile)
+        rm(tmpfile)
     end
     for tfmfile in glob(outname*"_warp"*"*.nii.gz", up)
         rm(tfmfile)
     end
-    return imgw
+    return imgw, tforms
 end
 
 register(output, fixed::AbstractArray, moving, pipeline::Stage; kwargs...) =
