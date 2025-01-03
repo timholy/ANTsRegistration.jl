@@ -251,7 +251,7 @@ tforms = register(output, nd, fixedname, movingname, pipeline; kwargs...)
 It also stores the output transform file in the hard drive.
 """
 #function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true, save_tform_file::Bool=true)
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true)
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}, save_tform_file; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true)
     cmd = `antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v 1`
@@ -288,7 +288,12 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     else
         run(cmd)
     end
-    get_itktforms(output, pipeline)
+    get_itktforms(output, pipeline; save_tform_file = save_tform_file)
+end
+
+function register(output, nd, fixedname, movingname, pipeline; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true)
+    save_tform_file = true
+    register(output, nd, fixedname, movingname, pipeline, save_tform_file; kwargs...)
 end
 
 """
@@ -327,8 +332,9 @@ No transform files are stored in the hard drive.
 function register(fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
     @info "`save_tform_file` is forcefully set to be false. Transform files are not saved on the disk."
     outname = joinpath(ANTsRegistration.userpath(), randstring(10))
-    kwargs = merge(Dict{Symbol, Any}(:save_tform_file => false), kwargs)
-    tforms = ANTsRegistration.register(outname, fixed, moving, pipeline; kwargs...)
+    save_tform_file = false
+#    kwargs = merge(Dict{Symbol, Any}(:save_tform_file => false), kwargs)
+    tforms = register(outname, fixed, moving, pipeline, save_tform_file; kwargs...)
     #Remove temporary transformation files.
     tfmnames = [outname*"0GenericAffine.mat", outname*"1Warp.nii.gz", outname*"1InverseWarp.nii.gz"]
     [isfile(tfmname) ? rm(tfmname) : nothing for tfmname in tfmnames]
