@@ -15,14 +15,19 @@ pipeline= [Stage(Global("Rigid"), MI(), (8,4,2), (3,2,1), (100,50,25), 1e-6, 10)
 
 # Registration
 tforms = register(img, rot, pipeline; seed = 1234)
-#tforms = register("tformout", img, rot, pipeline; seed = 1234) #save transform files in the hard drive
+#prefix = "tformout"
+#tforms = register(prefix, img, rot, pipeline; seed = 1234) #save transform files in the hard drive
+
+# Convert transform file to text file and load as ITKTransform type (Single example)
+#convertTransformFile(prefix*"0GenericAffine.mat", prefix*"0GenericAffine.txt") #Affine tform
+#aff_tform = load_itktform(prefix*"0GenericAffine.txt")
 
 # Transformation
 tfms = [Tform(tforms[2]), Tform(tforms[1])] #tforms[2]: warp, #tforms[1]: affine
 imgw = applyTransforms(tfms, img, rot)
 
 # Image Comparison
-imgw1 = Gray{N0f8}.(imgw./typemax(UInt8))
+imgw1 = Gray{N0f8}.(imgw./typemax(UInt8)) #normalization
 imshow([img; imgw1])
 imshow(RGB{N0f8}.(img, imgw1, zeros(Gray{N0f8}, size(img)))) #RGB
 
