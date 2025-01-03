@@ -291,7 +291,7 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     get_itktforms(output, pipeline; save_tform_file = save_tform_file)
 end
 
-function register(output, nd, fixedname, movingname, pipeline; kwargs...)
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::abstractVector{<:Stage}; kwargs...) #set save_tform_file true
     save_tform_file = true
     register(output, nd, fixedname, movingname, pipeline, save_tform_file; kwargs...)
 end
@@ -306,7 +306,7 @@ e.g.)
 tforms = register(output, fixedname, movingname, pipeline; kwargs...)
 It also stores the output transform file in the hard drive.
 """
-function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
+function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}, save_tform_file; kwargs...)
     maskfile = ""
     if any(isnan, fixed)
         # Create a mask
@@ -314,11 +314,18 @@ function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline:
     end
     fixedname = write_nrrd(fixed)
     movingname = write_nrrd(moving)
-    tforms = register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...) #This still creates transformation files.
+    tforms = register(output, sdims(fixed), fixedname, movingname, pipeline, save_tform_file; kwargs...) #This still creates transformation files.
     rm(movingname)
     rm(fixedname)
     return tforms
 end
+
+function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...) #set save_tform_file true
+    save_tform_file = true
+    tforms = register(output, fixed, moving, pipeline, save_tform_file; kwargs...) #This still creates transformation files.
+    return tforms
+end
+
 
 """
 `fixed` and `moving` are image files in the hard drive.
@@ -330,7 +337,7 @@ tforms = register(fixedname, movingname, pipeline; kwargs...)
 No transform files are stored in the hard drive.
 """
 function register(fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
-    @info "`save_tform_file` is forcefully set to be false. Transform files are not saved on the disk."
+    @info "Transform files are not saved on the disk."
     outname = joinpath(ANTsRegistration.userpath(), randstring(10))
     save_tform_file = false
 #    kwargs = merge(Dict{Symbol, Any}(:save_tform_file => false), kwargs)

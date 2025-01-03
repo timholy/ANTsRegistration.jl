@@ -1,5 +1,4 @@
 using ANTsRegistration
-using ANTsRegistration
 using TestImages
 using Images
 using ImageView
