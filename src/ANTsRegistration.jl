@@ -291,7 +291,7 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     get_itktforms(output, pipeline; save_tform_file = save_tform_file)
 end
 
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::abstractVector{<:Stage}; kwargs...) #set save_tform_file true
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; kwargs...) #set save_tform_file true
     save_tform_file = true
     register(output, nd, fixedname, movingname, pipeline, save_tform_file; kwargs...)
 end
