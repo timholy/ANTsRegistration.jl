@@ -291,7 +291,7 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     get_itktforms(output, pipeline; save_tform_file = save_tform_file)
 end
 
-function register(output, nd, fixedname, movingname, pipeline; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true)
+function register(output, nd, fixedname, movingname, pipeline; kwargs...)
     save_tform_file = true
     register(output, nd, fixedname, movingname, pipeline, save_tform_file; kwargs...)
 end
