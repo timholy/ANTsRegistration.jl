@@ -241,16 +241,17 @@ function get_itktforms(output, pipeline::AbstractVector{<:Stage}; save_tform_fil
 end
 
 """
-`fixed` and `moving` are image files in the hard drive.
+`output` is a prefix for output transform files.
 `nd` is the dimension of the image (mostly 2 or 3).
-`output` is a prefix for the output transform file.
+`fixed` and `moving` are image files in the hard drive.
+
 e.g.)
 
 tforms = register(output, nd, fixedname, movingname, pipeline; kwargs...)
-
-By default, it also stores the output transform file in the hard drive.
+It also stores the output transform file in the hard drive.
 """
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true, save_tform_file::Bool=true)
+#function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true, save_tform_file::Bool=true)
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true)
     cmd = `antsRegistration -d $nd`
     if verbose
         cmd = `$cmd -v 1`
@@ -287,9 +288,19 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
     else
         run(cmd)
     end
-    get_itktforms(output, pipeline; save_tform_file = save_tform_file)
+    get_itktforms(output, pipeline)
 end
 
+"""
+`output` is a prefix for output transform files.
+`fixed` and `moving` are image files in the hard drive.
+Image dimension is automatically calculated.
+
+e.g.)
+
+tforms = register(output, fixedname, movingname, pipeline; kwargs...)
+It also stores the output transform file in the hard drive.
+"""
 function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
     maskfile = ""
     if any(isnan, fixed)
@@ -304,6 +315,15 @@ function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline:
     return tforms
 end
 
+"""
+`fixed` and `moving` are image files in the hard drive.
+Image dimension is automatically calculated.
+
+e.g.)
+
+tforms = register(fixedname, movingname, pipeline; kwargs...)
+No transform files are stored in the hard drive.
+"""
 function register(fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
     @info "`save_tform_file` is forcefully set to be false. Transform files are not saved on the disk."
     outname = joinpath(ANTsRegistration.userpath(), randstring(10))
@@ -318,32 +338,12 @@ end
 register(output, fixed::AbstractArray, moving, pipeline::Stage; kwargs...) =
     register(output, fixed, moving, [pipeline]; kwargs...)
 
-"""
-    imgw = register(fixed, moving, pipeline; kwargs...)
-
-Return a version of `moving` that has been warped to match
-`fixed`. `pipeline` is a single [`Stage`](@ref) or a vector of stages.
-
-# Example
-
-    ## Create some images
-    using Images, TestImages, Rotations, CoordinateTransformations
-    img = testimage("cameraman")
-    tfm = Translation(125,250) ∘ LinearMap(RotMatrix(pi/50)) ∘ Translation(-125,-250)
-    img_rotated = warp(img, tfm)
-    fixed = img[50:300, 50:300]
-    moving = img_rotated[50:300, 50:300]
-
-    ## Perform the registration
-    rigid = Stage(fixed, Global("Rigid"))
-    syn = Stage(fixed, SyN())
-    imgw = register(fixed, moving, [rigid,syn])
-"""
 register(fixed::AbstractArray, moving, pipeline::Stage; kwargs...) =
     register(fixed, moving, [pipeline]; kwargs...)
 
 
 """
+#FIXME
     motioncorr(output, fixed, movingname, pipeline; kwargs...)
 
 Perform motion correction in an image series. All images are

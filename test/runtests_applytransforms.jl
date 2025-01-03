@@ -1,4 +1,5 @@
 using ANTsRegistration
+using ANTsRegistration
 using TestImages
 using Images
 using ImageView
@@ -15,17 +16,23 @@ pipeline= [Stage(Global("Rigid"), MI(), (8,4,2), (3,2,1), (100,50,25), 1e-6, 10)
 
 # Registration
 tforms = register(img, rot, pipeline; seed = 1234)
+#tforms = register("tformout", img, rot, pipeline; seed = 1234) #save transform files in the hard drive
 
 # Transformation
-tfms = [Tform(tforms[2]), Tform(tforms[1])]
+tfms = [Tform(tforms[2]), Tform(tforms[1])] #tforms[2]: warp, #tforms[1]: affine
 imgw = applyTransforms(tfms, img, rot)
-imshow(imgw)
+
+# Image Comparison
+imgw1 = Gray{N0f8}.(imgw./typemax(UInt8))
+imshow([img; imgw1])
+imshow(RGB{N0f8}.(img, imgw1, zeros(Gray{N0f8}, size(img)))) #RGB
 
 # Inverse transformation
-invtfms = [Tform(tforms[1], 1), Tform(tforms[3])]
+invtfms = [Tform(tforms[1], 1), Tform(tforms[3])] #tforms[3]: invwarp, (tforms[1], 1): inv affine
 imginv = applyTransforms(invtfms, img, imgw; verbose = true, suppressout = false) #FIXME
 imshow(imginv)
 
 # Apply transform to points
-p = [Point(490,140,1,1), Point(259,407,1,1), Point(112, 173, 1, 1)]
-pout = applyTransformsToPoints("test.csv", 2, invtfms, p)
+p = [Point(490,140,0,0), Point(259,407,0,0), Point(112, 173, 0, 0)] #Point(x, y, z, t) 
+pout = applyTransformsToPoints(2, invtfms, p)
+#pout = applyTransformsToPoints("fileout.csv", 2, invtfms, p) #save point coordinates in the hard drive
