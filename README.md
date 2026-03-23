@@ -116,7 +116,7 @@ deformable registration:
 
 ```julia
 stageaff = Stage(fixed, Global("Affine"))
-stagesyn = Stage(fixed, Syn())
+stagesyn = Stage(fixed, SyN())
 itktforms = register(fixed, moving, [stageaff,stagesyn]; kwargs...)
 imgw = applyTransform(Tform.(itktforms[[2,1]]), fixed, moving; kwargs...)
 ```
