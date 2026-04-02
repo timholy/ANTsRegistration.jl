@@ -8,6 +8,7 @@ export ITKTransform, convertTransformFile, load_itktform, save_itktform
 
 include("applytransforms.jl")
 include("convertTransformFiles.jl")
+include("manual_translation.jl")
 
 ## Load in `deps.jl`, complaining if it does not exist
 #const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
