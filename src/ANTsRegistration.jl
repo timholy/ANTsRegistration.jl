@@ -1,20 +1,32 @@
 module ANTsRegistration
 
-using Images, Glob, Random, Unitful, Suppressor
+using Images, Glob, Random, Unitful, Suppressor, DataFrames, CSV
 
 export register, motioncorr, warp, Global, SyN, MeanSquares, CC, MI, Stage
+export Tform, Linear, NearestNeighbor, MultiLabel, Gaussian, BSpline, CosineWindowedSinc, HammingWindowedSinc, LanczosWindowedSinc, GenericLabel, Point, applyTransformsToPoints, applyTransforms
+export ITKTransform, convertTransformFile, load_itktform, save_itktform
 
-# Load in `deps.jl`, complaining if it does not exist
-const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
-if !isfile(depsjl_path)
-    error("ANTsRegistration not installed properly, run `] build ANTsRegistration', restart Julia and try again")
-end
-include(depsjl_path)
+include("applytransforms.jl")
+include("convertTransformFiles.jl")
 
-# Module initialization function
-function __init__()
-    check_deps()
-end
+## Load in `deps.jl`, complaining if it does not exist
+#const depsjl_path = joinpath(@__DIR__, "..", "deps", "deps.jl")
+#if !isfile(depsjl_path)
+#    error("ANTsRegistration not installed properly, run `] build ANTsRegistration', restart Julia and try again")
+#end
+#include(depsjl_path)
+#
+## Module initialization function
+#function __init__()
+#    check_deps()
+#end
+#
+
+# Path to the ANTs binary
+ants_path = joinpath(@__DIR__, "deps", "bin", "antsRegistration")  # Adjust based on the binary name
+
+# Example command to call the ANTs binary
+#run(`$ants_path --version`)
 
 # Per-user working path
 function userpath()
@@ -115,7 +127,7 @@ metric(cmd::Cmd, fixedname, movingname, m::CC) =
     `$cmd --metric CC\[$fixedname,$movingname,$(m.metricweight),$(m.radius)\]`
 
 
-struct Stage{N,T}
+struct Stage{N,D,T}
     transform::AbstractTransformation
     metric::AbstractMetric
     shrink::NTuple{N,Int}
@@ -123,7 +135,10 @@ struct Stage{N,T}
     iterations::NTuple{N,Int}
     convergencethresh::Float64
     convergencewindow::Int
+    restrictdeformation::NTuple{D,Any}
 end
+
+Stage(transform::AbstractTransformation, metric::AbstractMetric, shrink::NTuple{N,Int}, smooth::NTuple{N,Any}, iterations::NTuple{N,Int}, convergencethresh::Float64, convergencewindow::Int) where N = Stage(transform, metric, shrink, smooth, iterations, convergencethresh, convergencewindow, (missing,)) #Add restrict deformation
 
 Stage(img::AbstractArray, transform::AbstractTransformation, metric::AbstractMetric,
       shrink::NTuple{N,Int}, smooth::NTuple{N,Any}, iterations::NTuple{N,Int}) where N =
@@ -160,6 +175,9 @@ function shcmd(cmd::Cmd, stage::Stage, fixedname, movingname; ismc::Bool=false)
     else
         cmd = `$cmd --convergence \[$(xstring(stage.iterations)),$(stage.convergencethresh),$(stage.convergencewindow)\]`
         cmd = `$cmd --shrink-factors $(xstring(stage.shrink)) --smoothing-sigmas $(xqstring(stage.smoothing))$(ustring(stage.smoothing))`
+    end
+    if !isa(stage.restrictdeformation, Tuple{Missing})
+        cmd = `$cmd --restrict-deformation $(xstring(stage.restrictdeformation))`
     end
     return cmd
 end
@@ -199,17 +217,69 @@ function default_convergence(sz::Dims, transform::SyN)
     return islarge ? ((100,100,70,50,0), 1e-6, 10) : ((100,70,50,0), 1e-6, 10)
 end
 
+function get_itktforms(output, pipeline::AbstractVector{<:Stage}; save_tform_file::Bool = true)
+    tformlist = unique(map(pipe -> typeof(pipe.transform), pipeline))
+    tform_output= Vector{ITKTransform}()
+    afffile_mat, afffile_txt = output*"0GenericAffine.mat", output*"0GenericAffine.txt"
+    warpfile_mat, warpfile_txt = output*"1Warp.nii.gz", output*"1Warp.txt"
+    invfile_mat, invfile_txt = output*"1InverseWarp.nii.gz", output*"1InverseWarp.txt"
+    if Global ∈ tformlist
+        convertTransformFile(afffile_mat, afffile_txt)
+        aff_tform = load_itktform(afffile_txt)
+        push!(tform_output, aff_tform)
+        rm(afffile_txt)
+    end
+    if SyN ∈ tformlist
+        # warp transformation
+        convertTransformFile(warpfile_mat, warpfile_txt)
+        warp_tform = load_itktform(warpfile_txt)
+        push!(tform_output, warp_tform)
+        rm(warpfile_txt)
+        # inversewarp transformation
+        convertTransformFile(invfile_mat, invfile_txt)
+        inv_tform = load_itktform(invfile_txt)
+        push!(tform_output, inv_tform)
+        rm(invfile_txt)
+    end
+    if !save_tform_file
+        [isfile(file) ? rm(file) : nothing for file in (afffile_mat, warpfile_mat, invfile_mat)]
+    end
+    tform_output
+end
 
-function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, verbose::Bool=false, suppressout::Bool=true)
-    cmd = `$antsRegistration -d $nd`
+"""
+`fixed` and `moving` are image files in the hard drive.
+`nd` is the dimension of the image (mostly 2 or 3).
+`output` is a prefix for the output transform file.
+e.g.)
+
+tforms = register(output, nd, fixedname, movingname, pipeline; kwargs...)
+
+By default, it also stores the output transform file in the hard drive.
+"""
+function register(output, nd::Int, fixedname::AbstractString, movingname::AbstractString, pipeline::AbstractVector{<:Stage}; histmatch::Bool=false, winsorize=nothing, initial_moving_transform = missing, initial_fixed_transform = missing, seed=nothing, verbose::Bool=false, suppressout::Bool=true, save_tform_file::Bool=true)
+    cmd = `antsRegistration -d $nd`
     if verbose
-        cmd = `$cmd -v`
+        cmd = `$cmd -v 1`
     end
     if histmatch
         cmd = `$cmd --use-histogram-matching`
     end
     if isa(winsorize, Tuple{Real,Real})
         cmd = `$cmd --winsorize-image-intensities \[$(winsorize[1]),$(winsorize[2])\]`
+    end
+    if isa(seed, Int)
+        cmd = `$cmd --random-seed $seed`
+    end
+    if isa(initial_moving_transform, Tform)
+        cmd = `$cmd --initial-moving-transform \[$(initial_moving_transform.transformFileName), $(initial_moving_transform.useInverse)\]`
+    elseif isa(initial_moving_transform, NTuple)
+        cmd = `$cmd --initial-moving-transform \[$(initial_moving_transform[1]), $(initial_moving_tform[2]), $(initial_moving_tform[3])\]`
+    end
+    if isa(initial_fixed_transform, Tform)
+        cmd = `$cmd --initial-fixed-transform \[$(initial_fixed_transform.transformFileName), $(initial_moving_transform.useInverse)\]`
+    elseif isa(initial_fixed_transform, NTuple)
+        cmd = `$cmd --initial-fixed-transform \[$(initial_fixed_transform[1]), $(initial_fixed_tform[2]), $(initial_fixed_tform[3])\]`
     end
     for pipe in pipeline
         cmd = shcmd(cmd, pipe, fixedname, movingname)
@@ -220,10 +290,11 @@ function register(output, nd::Int, fixedname::AbstractString, movingname::Abstra
         @show cmd
     end
     if suppressout
-    @suppress_out run(cmd)
+        @suppress_out run(cmd)
     else
         run(cmd)
     end
+    get_itktforms(output, pipeline; save_tform_file = save_tform_file)
 end
 
 function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
@@ -234,27 +305,21 @@ function register(output, fixed::AbstractArray, moving::AbstractArray, pipeline:
     end
     fixedname = write_nrrd(fixed)
     movingname = write_nrrd(moving)
-    imgw = register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...)
+    tforms = register(output, sdims(fixed), fixedname, movingname, pipeline; kwargs...) #This still creates transformation files.
     rm(movingname)
     rm(fixedname)
+    return tforms
 end
 
-function register(fixed::AbstractArray, moving, pipeline::AbstractVector{<:Stage}; kwargs...)
-    up = userpath()
-    outname = randstring(10)
-    tfmname = joinpath(up, outname*"_warp")
-    warpedname = joinpath(up, outname*".nrrd")
-    output = (tfmname, warpedname)
-    register(output, fixed, moving, pipeline; kwargs...)
-    imgw = load(warpedname)
-    rm(warpedname)
-    for tfmfile in glob(outname*"_warp"*"*.mat", up)
-        rm(tfmfile)
-    end
-    for tfmfile in glob(outname*"_warp"*"*.nii.gz", up)
-        rm(tfmfile)
-    end
-    return imgw
+function register(fixed::AbstractArray, moving::AbstractArray, pipeline::AbstractVector{<:Stage}; kwargs...)
+    @info "`save_tform_file` is forcefully set to be false. Transform files are not saved on the disk."
+    outname = joinpath(ANTsRegistration.userpath(), randstring(10))
+    kwargs = merge(Dict{Symbol, Any}(:save_tform_file => false), kwargs)
+    tforms = ANTsRegistration.register(outname, fixed, moving, pipeline; kwargs...)
+    #Remove temporary transformation files.
+    tfmnames = [outname*"0GenericAffine.mat", outname*"1Warp.nii.gz", outname*"1InverseWarp.nii.gz"]
+    [isfile(tfmname) ? rm(tfmname) : nothing for tfmname in tfmnames]
+    return tforms
 end
 
 register(output, fixed::AbstractArray, moving, pipeline::Stage; kwargs...) =
